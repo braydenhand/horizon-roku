@@ -1,0 +1,5 @@
+# Store and check out text with LF (shell scripts run on Linux; BrightScript is fine either way)
+* text=auto eol=lf
+*.jpg binary
+*.png binary
+*.ttf binary
