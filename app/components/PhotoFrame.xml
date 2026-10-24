@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Full-screen photo frame: photos from the Pi crossfading with a short settle,
+     plus clock, date and weather. Used by the Roku screensaver and by the
+     launcher's Screensaver button. -->
+<component name="PhotoFrame" extends="Group">
+  <interface>
+    <!-- Set false before removing the frame to stop its timers -->
+    <field id="active" type="bool" value="true" onChange="onActive" />
+    <!-- Photo to start with (file name), e.g. the one Home is showing -->
+    <field id="first" type="string" />
+  </interface>
+
+  <script type="text/brightscript" uri="PhotoFrame.brs" />
+
+  <children>
+    <Rectangle id="black" width="1920" height="1080" color="0x000000FF" />
+
+    <!-- Two photo layers for crossfading: photoA stays opaque underneath,
+         photoB fades in/out on top. Both overhang the screen by 32/18 px
+         (the TV enlarges the 1920x1080 photos ~3%) so their edges never show,
+         even while scaled. -->
+    <Poster id="photoA" translation="[-32, -18]" width="1984" height="1116" scaleRotateCenter="[992, 558]" />
+    <Poster id="photoB" translation="[-32, -18]" width="1984" height="1116" scaleRotateCenter="[992, 558]" opacity="0" />
+
+    <!-- Shadow behind the clock, pinned to the bottom-left corner. It must not
+         move with the overlay's drift, or its edges show. -->
+    <Poster id="scrim" translation="[0, 540]" width="1300" height="540" uri="pkg:/images/scrim.png" />
+
+    <!-- Same type as Home's clock and info line -->
+    <Group id="overlay" translation="[0, 0]">
+      <Label id="clock" translation="[96, 842]" color="0xF6F1E7FF">
+        <Font role="font" uri="pkg:/fonts/Inter-Medium.ttf" size="84" />
+      </Label>
+      <Label id="info" translation="[100, 956]" color="0xF6F1E7E0">
+        <Font role="font" uri="pkg:/fonts/Inter-Medium.ttf" size="30" />
+      </Label>
+    </Group>
+
+    <Animation id="fade" duration="2.0" easeFunction="inOutCubic">
+      <FloatFieldInterpolator id="fadeTo" key="[0.0, 1.0]" fieldToInterp="photoB.opacity" />
+    </Animation>
+    <!-- Each photo settles from slightly zoomed in to rest during the
+         crossfade. Slow continuous zooms judder on the TV, so it's kept short. -->
+    <Animation id="zoomA" duration="4.0" easeFunction="outCubic">
+      <Vector2DFieldInterpolator key="[0.0, 1.0]" keyValue="[[1.04, 1.04], [1.0, 1.0]]" fieldToInterp="photoA.scale" />
+    </Animation>
+    <Animation id="zoomB" duration="4.0" easeFunction="outCubic">
+      <Vector2DFieldInterpolator key="[0.0, 1.0]" keyValue="[[1.04, 1.04], [1.0, 1.0]]" fieldToInterp="photoB.scale" />
+    </Animation>
+
+    <Timer id="clockTimer" repeat="true" duration="5" />
+    <Timer id="photoTimer" repeat="true" duration="60" />
+    <Timer id="weatherTimer" repeat="true" duration="900" />
+  </children>
+</component>

@@ -1,0 +1,5 @@
+# Build and tools (your computer). The Pi uses Debian packages instead:
+# python3-websockets python3-pil (installed by deploy_pi.py --install)
+websockets>=12
+pillow>=10.3
+resvg-py>=0.5

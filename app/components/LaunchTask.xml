@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="LaunchTask" extends="Task">
+  <interface>
+    <field id="appId" type="string" />
+    <field id="relay" type="string" />
+    <field id="result" type="integer" />
+  </interface>
+  <script type="text/brightscript" uri="LaunchTask.brs" />
+</component>

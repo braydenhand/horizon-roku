@@ -1,0 +1,16 @@
+# Local configuration (TV password, addresses, location)
+config.json
+
+# Generated
+/build/
+/cache/
+__pycache__/
+.venv/
+
+# Your own photos and launch-screen override
+/photos/
+/wallpapers/
+
+# Diagnostics that can contain private network details
+pi/netstate-*.txt
+*.log

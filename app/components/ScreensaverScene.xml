@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- The Roku screensaver (Settings > Theme > Screensavers > Horizon) -->
+<component name="ScreensaverScene" extends="Scene">
+  <children>
+    <PhotoFrame id="frame" />
+  </children>
+</component>

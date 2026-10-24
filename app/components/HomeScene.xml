@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Home: a photo, glass dock of apps, and a glass inputs pill. Positions come
+     from data/apps.json (see build.py) and are applied in HomeScene.brs. -->
+<component name="HomeScene" extends="Scene">
+  <interface>
+    <field id="launchReason" type="string" onChange="onLaunchReason" />
+  </interface>
+
+  <script type="text/brightscript" uri="HomeScene.brs" />
+
+  <children>
+    <!-- Background: bgA starts as the launch screen (blurred photo + name) so
+         the hand-off is seamless; the Pi's photo, or the bundled one if the
+         Pi is unreachable, then fades in over it on bgB. -->
+    <Poster id="bgA" width="1920" height="1080" uri="pkg:/images/splash.jpg" />
+    <Poster id="bgB" width="1920" height="1080" opacity="0" />
+    <Poster id="shade" width="1920" height="300" uri="pkg:/images/shade_top.png" />
+    <Poster id="scrim" translation="[0, 560]" width="1920" height="520" uri="pkg:/images/scrim_bottom.png" />
+
+    <Group id="content" opacity="0">
+      <Label id="clockShadow" translation="[140, 74]" color="0x0000003C">
+        <Font role="font" uri="pkg:/fonts/Inter-Medium.ttf" size="64" />
+      </Label>
+      <Label id="clock" translation="[140, 72]" color="0xF6F1E7FF">
+        <Font role="font" uri="pkg:/fonts/Inter-Medium.ttf" size="64" />
+      </Label>
+      <Label id="infoShadow" translation="[142, 160]" color="0x00000046">
+        <Font role="font" uri="pkg:/fonts/Inter-Medium.ttf" size="30" />
+      </Label>
+      <Label id="info" translation="[142, 158]" color="0xF6F1E7E0">
+        <Font role="font" uri="pkg:/fonts/Inter-Medium.ttf" size="30" />
+      </Label>
+
+      <!-- Dock -->
+      <Poster id="dockGlass" uri="pkg:/images/glass_dock.png" />
+      <Group id="shelf">
+        <Group id="track">
+          <Poster id="plate" uri="pkg:/images/plate_tile.png" />
+        </Group>
+      </Group>
+      <Poster id="fadeL" uri="pkg:/images/glass_fadeL.png" opacity="0" />
+      <Poster id="fadeR" uri="pkg:/images/glass_fadeR.png" opacity="0" />
+
+      <!-- Inputs: a glass circle that stretches into a pill on focus -->
+      <Group id="mini">
+        <Poster id="miniGlass" uri="pkg:/images/glass_mini.png" />
+        <Poster id="tvIcon" uri="pkg:/images/tv.png" opacity="0.84" />
+      </Group>
+      <Group id="pill" opacity="0">
+        <Poster id="pillGlass" uri="pkg:/images/glass_pill.png" />
+      </Group>
+      <Group id="pillContent" opacity="0">
+        <Poster id="segPlate" uri="pkg:/images/plate_segment.png" />
+      </Group>
+
+      <!-- Top-right controls (built from layout.utils) -->
+      <Group id="utils" />
+    </Group>
+
+    <AllApps id="allApps" opacity="0" visible="false" />
+    <Settings id="settings" opacity="0" visible="false" />
+    <!-- The screensaver's PhotoFrame is added here while it's showing. The fade
+         targets this permanent layer: an interpolator stays bound to the first
+         node it found, so it must not target a node that gets replaced. -->
+    <Group id="saverLayer" opacity="0" />
+
+    <!-- Holds remote focus for Home; keys bubble up to the scene -->
+    <Group id="keyTrap" focusable="true" />
+
+    <Animation id="fadeIn" duration="0.5" easeFunction="outCubic">
+      <FloatFieldInterpolator key="[0.0, 1.0]" keyValue="[0.0, 1.0]" fieldToInterp="content.opacity" />
+    </Animation>
+    <Animation id="bgFade" duration="0.6" easeFunction="inOutCubic">
+      <FloatFieldInterpolator id="bgFadeTo" key="[0.0, 1.0]" keyValue="[0.0, 1.0]" fieldToInterp="bgB.opacity" />
+    </Animation>
+
+    <Animation id="plateAnim" duration="0.18" easeFunction="outCubic">
+      <Vector2DFieldInterpolator id="plateTo" key="[0.0, 1.0]" fieldToInterp="plate.translation" />
+    </Animation>
+    <Animation id="trackAnim" duration="0.22" easeFunction="outCubic">
+      <Vector2DFieldInterpolator id="trackTo" key="[0.0, 1.0]" fieldToInterp="track.translation" />
+    </Animation>
+    <Animation id="segAnim" duration="0.18" easeFunction="outCubic">
+      <Vector2DFieldInterpolator id="segTo" key="[0.0, 1.0]" fieldToInterp="segPlate.translation" />
+    </Animation>
+
+    <!-- Stretch: overshoot slightly, then settle. Key values are set in code
+         from the current state so a reversal mid-way doesn't jump. -->
+    <Animation id="pillAnim" easeFunction="outCubic">
+      <Vector2DFieldInterpolator id="pillScale" fieldToInterp="pill.scale" />
+      <FloatFieldInterpolator id="pillOpacity" fieldToInterp="pill.opacity" />
+      <FloatFieldInterpolator id="miniOpacity" fieldToInterp="mini.opacity" />
+      <FloatFieldInterpolator id="contentOpacity" fieldToInterp="pillContent.opacity" />
+    </Animation>
+
+    <!-- Swap between Home and the All apps sheet -->
+    <Animation id="layerAnim" duration="0.3" easeFunction="outCubic">
+      <FloatFieldInterpolator id="layerContent" key="[0.0, 1.0]" fieldToInterp="content.opacity" />
+      <FloatFieldInterpolator id="layerSheet" key="[0.0, 1.0]" fieldToInterp="allApps.opacity" />
+      <FloatFieldInterpolator id="layerSettings" key="[0.0, 1.0]" fieldToInterp="settings.opacity" />
+    </Animation>
+    <Animation id="saverAnim" easeFunction="inOutCubic">
+      <FloatFieldInterpolator id="saverFade" key="[0.0, 1.0]" fieldToInterp="saverLayer.opacity" />
+    </Animation>
+
+    <Timer id="clockTimer" repeat="true" duration="5" />
+    <!-- Timed photo changes (Settings > Change photo) -->
+    <Timer id="rotateTimer" repeat="true" />
+    <!-- Next photo and its glass load here first, so the change is seamless -->
+    <Group id="preload" opacity="0" />
+    <Timer id="weatherTimer" repeat="true" duration="900" />
+    <Timer id="revealTimer" duration="2" />
+    <Timer id="statusTimer" duration="4" />
+  </children>
+</component>

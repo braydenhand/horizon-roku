@@ -1,0 +1,80 @@
+{
+  "title": "Horizon",
+  "apps": [
+    {
+      "id": "12",
+      "label": "Netflix",
+      "mark": "netflix"
+    },
+    {
+      "id": "837",
+      "label": "YouTube",
+      "mark": "youtube"
+    },
+    {
+      "id": "195316",
+      "label": "YouTube TV"
+    },
+    {
+      "id": "291097",
+      "label": "Disney+",
+      "mark": "disneyplus"
+    },
+    {
+      "id": "61322",
+      "label": "HBO Max",
+      "mark": "hbomax"
+    },
+    {
+      "id": "2285",
+      "label": "Hulu"
+    },
+    {
+      "id": "13",
+      "label": "Prime Video",
+      "mark": "primevideo"
+    },
+    {
+      "id": "551012",
+      "label": "Apple TV",
+      "mark": "appletv"
+    },
+    {
+      "id": "593099",
+      "label": "Peacock"
+    },
+    {
+      "id": "22297",
+      "label": "Spotify",
+      "mark": "spotify"
+    },
+    {
+      "id": "2595",
+      "label": "Crunchyroll",
+      "mark": "crunchyroll"
+    },
+    {
+      "id": "34376",
+      "label": "ESPN"
+    },
+    {
+      "id": "151908",
+      "label": "Roku Channel",
+      "mark": "roku"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "tvinput.hdmi1",
+      "label": "HDMI 1"
+    },
+    {
+      "id": "tvinput.hdmi2",
+      "label": "HDMI 2"
+    },
+    {
+      "id": "tvinput.hdmi3",
+      "label": "HDMI 3"
+    }
+  ]
+}

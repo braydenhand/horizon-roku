@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- All apps: every installed app in a grid over a blurred copy of the
+     background. The list and icons come from the watcher on the Pi. -->
+<component name="AllApps" extends="Group">
+  <interface>
+    <field id="relay" type="string" />
+    <field id="grid" type="assocarray" />
+    <!-- Set to a photo name to use its blurred copy as the backdrop -->
+    <field id="photo" type="string" onChange="onPhoto" />
+    <!-- Outputs to HomeScene -->
+    <field id="launchApp" type="assocarray" alwaysNotify="true" />
+    <field id="toggleHome" type="assocarray" alwaysNotify="true" />
+    <!-- Inputs from HomeScene: which apps are on Home, and a short notice -->
+    <field id="homeIds" type="array" onChange="updateChecks" />
+    <field id="notice" type="string" alwaysNotify="true" onChange="onNotice" />
+    <field id="closed" type="bool" alwaysNotify="true" />
+    <!-- Set by HomeScene once the sheet is hidden: frees its images -->
+    <field id="released" type="bool" alwaysNotify="true" onChange="release" />
+    <!-- Call when the sheet is shown -->
+    <field id="opened" type="bool" alwaysNotify="true" onChange="onOpened" />
+  </interface>
+
+  <script type="text/brightscript" uri="AllApps.brs" />
+
+  <children>
+    <Poster id="backdrop" width="1920" height="1080" />
+    <Rectangle id="veil" width="1920" height="1080" color="0x080C0E66" />
+
+    <Label id="title" translation="[140, 72]" text="All apps" color="0xF6F1E7FF">
+      <Font role="font" uri="pkg:/fonts/Inter-Medium.ttf" size="56" />
+    </Label>
+    <Label id="count" translation="[142, 146]" color="0xF6F1E7AA">
+      <Font role="font" uri="pkg:/fonts/Inter-Medium.ttf" size="28" />
+    </Label>
+
+    <Group id="viewport">
+      <Group id="cells">
+        <Poster id="plate" uri="pkg:/images/plate_grid.png" opacity="0" />
+      </Group>
+    </Group>
+
+    <Label id="message" translation="[140, 260]" color="0xF6F1E7CC">
+      <Font role="font" uri="pkg:/fonts/Inter-Medium.ttf" size="34" />
+    </Label>
+
+    <Timer id="noticeTimer" duration="3" />
+
+    <Animation id="plateAnim" duration="0.18" easeFunction="outCubic">
+      <Vector2DFieldInterpolator id="plateTo" key="[0.0, 1.0]" fieldToInterp="plate.translation" />
+    </Animation>
+    <Animation id="scrollAnim" duration="0.24" easeFunction="outCubic">
+      <Vector2DFieldInterpolator id="scrollTo" key="[0.0, 1.0]" fieldToInterp="cells.translation" />
+    </Animation>
+  </children>
+</component>

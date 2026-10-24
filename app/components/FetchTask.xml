@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="FetchTask" extends="Task">
+  <interface>
+    <field id="kind" type="string" />
+    <field id="url" type="string" />
+    <field id="code" type="integer" />
+    <field id="response" type="string" />
+    <field id="done" type="bool" alwaysNotify="true" />
+  </interface>
+  <script type="text/brightscript" uri="FetchTask.brs" />
+</component>

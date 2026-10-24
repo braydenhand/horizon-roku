@@ -1,0 +1,38 @@
+# Template: deploy_pi.py fills in @USER@ and @DIR@ and installs it as
+# /etc/systemd/system/roku-watcher.service
+[Unit]
+Description=Horizon watcher: launch relay, redirect, photos and glass for the Roku launcher
+Documentation=https://github.com/braydenhand/horizon-roku
+# Only needs the LAN. Deliberately no ordering on VPN services (Tailscale,
+# WireGuard, ...) so it never delays or depends on them at boot.
+Wants=network-online.target
+After=network-online.target
+# Keep retrying forever (e.g. eth0 address not assigned yet at boot)
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=@USER@
+WorkingDirectory=@DIR@
+# Listens on the address in config.json (set it to the LAN address so the
+# service isn't reachable through VPN interfaces); -v adds every TV event to the log
+ExecStart=/usr/bin/python3 -u @DIR@/watcher.py --redirect
+Restart=always
+RestartSec=5
+
+# Sandboxing: read-only view of the system, no privilege escalation, capped memory
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+# Writable cache for resized photos: /var/cache/roku-watcher ($CACHE_DIRECTORY)
+CacheDirectory=roku-watcher
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_UNIX
+# Headroom for decoding very large photos (PNGs can't be decoded at reduced size)
+MemoryMax=192M
+
+[Install]
+WantedBy=multi-user.target
