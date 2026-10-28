@@ -2,7 +2,11 @@ sub Main(args as Dynamic)
     screen = CreateObject("roSGScreen")
     port = CreateObject("roMessagePort")
     screen.SetMessagePort(port)
-    scene = screen.CreateScene("HomeScene")
+    ' Developer hook: /launch/dev?mode=screensaver runs the screensaver scene as
+    ' an app, so it can be screenshotted and debugged like one
+    sceneName = "HomeScene"
+    if args <> invalid and args.mode = "screensaver" then sceneName = "ScreensaverScene"
+    scene = screen.CreateScene(sceneName)
     screen.Show()
     if args <> invalid and args.reason <> invalid then scene.launchReason = args.reason
 

@@ -175,8 +175,16 @@ python tools/console.py 30           # TV debug console
 python tools/listen.py 120           # live TV events
 python tools/ws_query.py query-active-app query-apps
 python tools/remote.py Up Right shot:check   # press keys, save build/shot-check.jpg
+python tools/debugserver.py "sgnodes all" loaded_textures   # SceneGraph debug server (:8080)
+python deploy_pi.py --verbose        # watcher logs every TV event and HTTP request
 ssh <pi> journalctl -u roku-watcher -f
 ```
+
+**Debugging the screensaver.** Roku's screensaver mode can't be screenshotted or inspected (`Channel not running: active UI` from both ECP‑2 and the debug server). Instead:
+- `curl -X POST "http://<tv>:8060/launch/dev?mode=screensaver"` runs `ScreensaverScene` as a normal app, so it can be screenshotted and inspected.
+- With `deploy_pi.py --verbose`, a running screensaver shows up in the Pi's log as `GET /photos?auto=1` plus a `/photo/…` request within a second of starting.
+
+**Open issue (Oct 2026):** once, after about four days of TV uptime, *Settings → Screensavers → Preview* showed solid black (no photo, no clock) while `query-active-app` reported the Horizon screensaver running. Reinstalling the app fixed it, and it didn't reproduce after a heavy launcher session. Next time, check the Pi log for the `/photos` request before reinstalling: no request means the screensaver's code never ran; a request means it ran but drew nothing.
 
 **Remote testing etiquette.** `tools/remote.py` presses real buttons on a real TV. If focus isn't where you think it is, **OK launches whatever is focused**, and this happened twice during development. Take a `shot:` and look at it before any OK, and keep sequences short.
 

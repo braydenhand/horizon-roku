@@ -2,6 +2,7 @@
 
     python deploy_pi.py --install   first time: apt packages, files, systemd service
     python deploy_pi.py             update: copy the code and config, restart
+    python deploy_pi.py --verbose   ...and log every TV event and HTTP request
 
 Uses the "pi" and "weather" sections of config.json and plain ssh/scp, so set
 up key-based SSH to config["pi"]["ssh"] first (and passwordless sudo, the
@@ -36,6 +37,7 @@ def scp(target, files, dest):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--install", action="store_true", help="also install apt packages and the systemd service")
+    parser.add_argument("--verbose", action="store_true", help="log every TV event and HTTP request (journalctl)")
     args = parser.parse_args()
 
     config = json.loads((ROOT / "config.json").read_text())
@@ -60,6 +62,8 @@ def main():
 
     unit = (ROOT / "pi" / "roku-watcher.service.in").read_text()
     unit = unit.replace("@USER@", user).replace("@DIR@", directory)
+    if args.verbose:
+        unit = unit.replace("watcher.py --redirect", "watcher.py --redirect -v")
     ssh(target, "cat > /tmp/roku-watcher.service", stdin=unit)
     ssh(target, "sudo install -m 644 -o root -g root /tmp/roku-watcher.service "
                 "/etc/systemd/system/roku-watcher.service && rm /tmp/roku-watcher.service "

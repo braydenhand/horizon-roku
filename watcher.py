@@ -192,6 +192,7 @@ class Watcher:
             if len(parts) < 2:
                 status, ctype, body = 400, "text/plain", b"bad request"
             else:
+                log.debug("http %s %s", parts[0], parts[1])
                 url = urllib.parse.urlsplit(parts[1])
                 query = dict(urllib.parse.parse_qsl(url.query))
                 status, ctype, body = await self.route(parts[0], url.path, query)
