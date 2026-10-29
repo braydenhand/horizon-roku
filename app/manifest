@@ -9,7 +9,3 @@ splash_color=#0B0F1A
 splash_min_time=0
 ui_resolutions=fhd
 screensaver_title=Horizon
-# Private: Roku runs it over Horizon itself. A non-private screensaver started
-# while its own app is running is never executed (solid black), and a private
-# one is left out of Settings > Theme > Screensavers.
-screensaver_private=1

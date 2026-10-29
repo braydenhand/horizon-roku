@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Horizon's screensaver, a private screensaver that Roku runs while Horizon
-     is open. Same look as PhotoFrame, but with no component script: after a
-     screensaver over Horizon is dismissed, Roku never runs the component code
-     (init, observers, Tasks) of the next one, so RunScreenSaver drives these
-     nodes from its own thread (source/screensaver.brs). -->
+<!-- Horizon's screensaver (Settings > Theme > Screensavers > Horizon). Same
+     look as PhotoFrame, but with no component script: after a screensaver over
+     Horizon is dismissed, Roku never runs the component code (init, observers,
+     Tasks) of the next one, so RunScreenSaver drives these nodes from its own
+     thread (source/screensaver.brs). -->
 <component name="ScreensaverScene" extends="Scene">
   <children>
     <Rectangle width="1920" height="1080" color="0x000000FF" />
