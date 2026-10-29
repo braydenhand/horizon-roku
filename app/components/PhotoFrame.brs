@@ -36,29 +36,12 @@ sub init()
     m.weatherTimer.observeField("fire", "fetchWeather")
     updateClock()
 
-    ' Decide how to get data once fields set in XML or by the creator have
-    ' arrived (an "external" frame is fed by its owner instead of fetching)
-    m.startTimer = m.top.findNode("startTimer")
-    m.startTimer.observeField("fire", "start")
-    m.startTimer.control = "start"
-end sub
-
-sub start()
-    if m.top.external then return  ' wait for photoData / weatherData
     if m.base = "" then
         setPhotos([])
     else
-        requestPhotos()
+        fetch("photos", m.base + "/photos?auto=1")
         fetchWeather()
         m.weatherTimer.control = "start"
-    end if
-end sub
-
-sub requestPhotos()
-    if m.top.external then
-        m.top.needPhotos = true
-    else
-        fetch("photos", m.base + "/photos?auto=1")
     end if
 end sub
 
@@ -76,42 +59,28 @@ end sub
 sub fetchWeather()
     fetch("weather", m.base + "/weather")
     ' If the Pi was unreachable earlier we are stuck on the fallback; try again
-    if m.photos.Count() = 1 and m.photos[0] = m.fallback then requestPhotos()
+    if m.photos.Count() = 1 and m.photos[0] = m.fallback then fetch("photos", m.base + "/photos?auto=1")
 end sub
 
 sub onFetched(event as Object)
     task = event.getRoSGNode()
     result = invalid
     if task.code = 200 then result = ParseJson(task.response)
-    if task.kind = "photos" then handlePhotos(result)
-    if task.kind = "weather" then handleWeather(result)
-end sub
-
-' External mode: the owner passes the raw JSON answers
-sub onPhotoData()
-    handlePhotos(ParseJson(m.top.photoData))
-end sub
-
-sub onWeatherData()
-    handleWeather(ParseJson(m.top.weatherData))
-end sub
-
-sub handlePhotos(result as Dynamic)
-    urls = []
-    if result <> invalid and result.photos <> invalid then
-        for each path in result.photos
-            urls.Push(m.base + path + "?size=home")
-        end for
+    if task.kind = "photos" then
+        urls = []
+        if result <> invalid and result.photos <> invalid then
+            for each path in result.photos
+                urls.Push(m.base + path + "?size=home")
+            end for
+        end if
+        setPhotos(urls)
+    else if task.kind = "weather" then
+        m.weatherText = ""
+        if result <> invalid and result.temp <> invalid then
+            m.weatherText = result.temp.ToStr() + "°  " + result.text
+        end if
+        updateClock()
     end if
-    setPhotos(urls)
-end sub
-
-sub handleWeather(result as Dynamic)
-    m.weatherText = ""
-    if result <> invalid and result.temp <> invalid then
-        m.weatherText = result.temp.ToStr() + "°  " + result.text
-    end if
-    updateClock()
 end sub
 
 sub setPhotos(urls as Object)
@@ -141,22 +110,13 @@ sub setPhotos(urls as Object)
     if urls.Count() > 1 then m.photoTimer.control = "start"
 end sub
 
-sub shuffle(items as Object)
-    for i = items.Count() - 1 to 1 step -1
-        j = Rnd(i + 1) - 1
-        tmp = items[i]
-        items[i] = items[j]
-        items[j] = tmp
-    end for
-end sub
-
 ' ---------------------------------------------------------------- photos
 
 sub nextPhoto()
     if m.photos.Count() = 0 then return
     if m.index + 1 >= m.photos.Count() and m.base <> "" and m.index >= 0 then
         ' End of a cycle: pick up photos added or removed on the Pi
-        requestPhotos()
+        fetch("photos", m.base + "/photos?auto=1")
         return
     end if
     m.index = m.index + 1
@@ -219,16 +179,8 @@ end sub
 ' ---------------------------------------------------------------- clock
 
 sub updateClock()
-    dt = CreateObject("roDateTime")
-    dt.ToLocalTime()
-    h12 = dt.GetHours() mod 12
-    if h12 = 0 then h12 = 12
-    m.clock.text = h12.ToStr() + ":" + Right("0" + dt.GetMinutes().ToStr(), 2)
-
-    months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-    text = dt.GetWeekday() + ", " + months[dt.GetMonth() - 1] + " " + dt.GetDayOfMonth().ToStr()
-    if m.weatherText <> "" then text = text + "  ·  " + m.weatherText
-    m.info.text = text
+    m.clock.text = clockText()
+    m.info.text = infoText(m.weatherText)
 end sub
 
 sub onActive()

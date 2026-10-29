@@ -1,23 +1,17 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <!-- Full-screen photo frame: photos from the Pi crossfading with a short settle,
-     plus clock, date and weather. Used by the Roku screensaver and by the
-     launcher's Screensaver button. -->
+     plus clock, date and weather. Used by the launcher's Screensaver button;
+     the Roku screensaver (ScreensaverScene) has the same look. -->
 <component name="PhotoFrame" extends="Group">
   <interface>
     <!-- Set false before removing the frame to stop its timers -->
     <field id="active" type="bool" value="true" onChange="onActive" />
     <!-- Photo to start with (file name), e.g. the one Home is showing -->
     <field id="first" type="string" />
-    <!-- External mode: the owner supplies the /photos and /weather JSON
-         (photoData, weatherData) and refetches when needPhotos fires, instead
-         of the frame using Task nodes (see ScreensaverScene) -->
-    <field id="external" type="bool" value="false" />
-    <field id="photoData" type="string" alwaysNotify="true" onChange="onPhotoData" />
-    <field id="weatherData" type="string" alwaysNotify="true" onChange="onWeatherData" />
-    <field id="needPhotos" type="bool" alwaysNotify="true" />
   </interface>
 
   <script type="text/brightscript" uri="PhotoFrame.brs" />
+  <script type="text/brightscript" uri="pkg:/source/frame.brs" />
 
   <children>
     <Rectangle id="black" width="1920" height="1080" color="0x000000FF" />
@@ -55,7 +49,6 @@
       <Vector2DFieldInterpolator key="[0.0, 1.0]" keyValue="[[1.04, 1.04], [1.0, 1.0]]" fieldToInterp="photoB.scale" />
     </Animation>
 
-    <Timer id="startTimer" duration="0.05" />
     <Timer id="clockTimer" repeat="true" duration="5" />
     <Timer id="photoTimer" repeat="true" duration="60" />
     <Timer id="weatherTimer" repeat="true" duration="900" />

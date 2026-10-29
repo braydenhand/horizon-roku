@@ -1,15 +1,35 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Horizon's screensaver: a private screensaver that Roku runs while Horizon
-     is open. RunScreenSaver (main.brs) fetches the data on its own thread and
-     passes it in: after a screensaver over Horizon is dismissed, Task nodes in
-     the next one never run, so the frame can't fetch for itself here. -->
+<!-- Horizon's screensaver, a private screensaver that Roku runs while Horizon
+     is open. Same look as PhotoFrame, but with no component script: after a
+     screensaver over Horizon is dismissed, Roku never runs the component code
+     (init, observers, Tasks) of the next one, so RunScreenSaver drives these
+     nodes from its own thread (source/screensaver.brs). -->
 <component name="ScreensaverScene" extends="Scene">
-  <interface>
-    <field id="photoData" type="string" alias="frame.photoData" />
-    <field id="weatherData" type="string" alias="frame.weatherData" />
-    <field id="needPhotos" type="bool" alias="frame.needPhotos" />
-  </interface>
   <children>
-    <PhotoFrame id="frame" external="true" />
+    <Rectangle width="1920" height="1080" color="0x000000FF" />
+
+    <Poster id="photoA" translation="[-32, -18]" width="1984" height="1116" scaleRotateCenter="[992, 558]" />
+    <Poster id="photoB" translation="[-32, -18]" width="1984" height="1116" scaleRotateCenter="[992, 558]" opacity="0" />
+
+    <Poster translation="[0, 540]" width="1300" height="540" uri="pkg:/images/scrim.png" />
+
+    <Group id="overlay">
+      <Label id="clock" translation="[96, 842]" color="0xF6F1E7FF">
+        <Font role="font" uri="pkg:/fonts/Inter-Medium.ttf" size="84" />
+      </Label>
+      <Label id="info" translation="[100, 956]" color="0xF6F1E7E0">
+        <Font role="font" uri="pkg:/fonts/Inter-Medium.ttf" size="30" />
+      </Label>
+    </Group>
+
+    <Animation id="fade" duration="2.0" easeFunction="inOutCubic">
+      <FloatFieldInterpolator id="fadeTo" key="[0.0, 1.0]" fieldToInterp="photoB.opacity" />
+    </Animation>
+    <Animation id="zoomA" duration="4.0" easeFunction="outCubic">
+      <Vector2DFieldInterpolator key="[0.0, 1.0]" keyValue="[[1.04, 1.04], [1.0, 1.0]]" fieldToInterp="photoA.scale" />
+    </Animation>
+    <Animation id="zoomB" duration="4.0" easeFunction="outCubic">
+      <Vector2DFieldInterpolator key="[0.0, 1.0]" keyValue="[[1.04, 1.04], [1.0, 1.0]]" fieldToInterp="photoB.scale" />
+    </Animation>
   </children>
 </component>

@@ -112,22 +112,24 @@ What Roku's mobile app uses, and it is **not** restricted by Limited mode.
 - Debug console: `telnet <tv> 8085`. **One connection at a time.** Prints, compile errors, and the debugger on a crash.
 - **Image memory is about 100 MB, shared with Roku's own UI, and acts as a cache.** `query-r2d2-bitmaps` lists every texture. Images held by hidden nodes stay loaded. When it's nearly full, developer screenshots come back black (the UI itself keeps working, because unreferenced textures get evicted).
 - Textures larger than the UI resolution log a warning and also broke screenshots, so photos are served at exactly 1920×1080 and enlarged ~3% by the Poster where edges must stay off screen.
-- Screensavers: `screensaver_title=` in the manifest plus `sub RunScreenSaver()` in `main.brs`. A non‑private screensaver from a developer app can be selected under *Settings → Theme → Screensavers*, but it **doesn't run while its own app is open** (see "Debugging the screensaver" below). Horizon's is private (`screensaver_private=1`).
+- Screensavers: `screensaver_title=` in the manifest plus `sub RunScreenSaver()` (in `source/screensaver.brs`). A non‑private screensaver from a developer app can be selected under *Settings → Theme → Screensavers*, but it **doesn't run while its own app is open** (see "Debugging the screensaver" below). Horizon's is private (`screensaver_private=1`).
 
 ---
 
 ## The Roku app
 
 ```
-app/source/main.brs           Main (HomeScene) and RunScreenSaver (ScreensaverScene)
+app/source/main.brs           Main (HomeScene)
+app/source/screensaver.brs    RunScreenSaver: drives ScreensaverScene from its own thread
+app/source/frame.brs          clock/date text and shuffle, shared with PhotoFrame
 app/components/
   HomeScene.xml/.brs          home screen, dock, inputs pill, top-right controls,
                               wallpaper loading/rotation, sheet + screensaver layers
   Tile.xml/.brs               one dock app: mark+label or name; highlight, lift, slide
   AllApps.xml/.brs            All apps sheet (grid, ✱ to add/remove)
   Settings.xml/.brs           Settings sheet + wallpaper picker
-  PhotoFrame.xml/.brs         photo crossfade + clock (screensaver and in-app)
-  ScreensaverScene.xml        Roku screensaver wrapper around PhotoFrame
+  PhotoFrame.xml/.brs         photo crossfade + clock (in-app screensaver)
+  ScreensaverScene.xml        Roku screensaver: the same nodes, no script
   LaunchTask.xml/.brs         LaunchApp, or the watcher relay for inputs
   FetchTask.xml/.brs          HTTP GET in a task thread
 ```
@@ -181,14 +183,14 @@ ssh <pi> journalctl -u roku-watcher -f
 ```
 
 **Debugging the screensaver.** Roku's screensaver mode can't be screenshotted or inspected (`Channel not running: active UI` from both ECP‑2 and the debug server). Instead:
-- `curl -X POST "http://<tv>:8060/launch/dev?mode=screensaver"` runs `ScreensaverScene` as a normal app, so it can be screenshotted and inspected.
+- `curl -X POST "http://<tv>:8060/launch/dev?mode=screensaver"` runs the screensaver (`RunScreenSaver`) as a normal app, so it can be screenshotted and inspected.
 - With `deploy_pi.py --verbose`, a running screensaver shows up in the Pi's log as `GET /photos?auto=1` plus a `/photo/…` request within a second of starting.
 
 **Solved (Oct 2026): a black screensaver over Horizon.** Two separate Roku behaviours were involved:
 1. If an app's **non‑private** screensaver kicks in *while that same app is running*, Roku reports it as running (`<screensaver id="dev">`) but never calls `RunScreenSaver`, so the screen is black. From Roku home or *Settings → Preview* it works, which made it look intermittent. Fix: `screensaver_private=1`, which Roku runs properly over the app; the trade‑off is that a private screensaver isn't listed in *Settings → Theme → Screensavers*.
-2. With the private screensaver, the **first** run in a Horizon session worked, but after it was dismissed, **Task nodes inside later runs never executed**: `RunScreenSaver` started and showed its screen, but the photo frame's `FetchTask` never made its request, so it stayed black. Horizon's own Tasks (LaunchTask, All apps) were unaffected. Fix: in screensaver mode, `RunScreenSaver` fetches `/photos` and `/weather` itself with `roUrlTransfer` on its own thread and passes the JSON to `PhotoFrame` (`external` mode: `photoData`, `weatherData`, `needPhotos`). Posters load images without Tasks. Verified over several consecutive cycles.
+2. With the private screensaver, the **first** run in a Horizon session worked, but after it was dismissed, **no component code runs in later runs**: `RunScreenSaver` starts and its scene's nodes are created, but `init()`, field observers and Task nodes never execute, so nothing sets a photo or the clock and the screen stays black. (A first fix moved only the fetching out of Tasks; that looked verified because the requests still arrived, but the frame never received them.) Horizon's own components are unaffected. Fix: `ScreensaverScene` has **no component script**, just nodes, and `source/screensaver.brs` drives them from `RunScreenSaver`'s thread: `roUrlTransfer` for data, Poster `loadStatus` observed on its message port, a 5‑second `wait()` loop for the clock and photo timing, and Animation nodes started by setting `control`. The in‑app screensaver (Home's Screensaver button) still uses `PhotoFrame`; the two share `source/frame.brs`. Verified over three consecutive cycles, each loading a photo and crossfading to the next a minute later.
 
-How this was diagnosed: the screensaver's output doesn't reach the debug console, so a temporary `ping()` in `RunScreenSaver` sent `GET /health?saver=<state>` to the watcher (with `--verbose` on, the Pi logs every request) to trace its lifecycle.
+How this was diagnosed: the screensaver's output doesn't reach the debug console, so temporary pings sent `GET /health?saver=<state>` to the watcher (with `--verbose` on, the Pi logs every request) from `RunScreenSaver` and from the component (`init`, data received, poster load status). In later runs only `RunScreenSaver`'s pings arrived, and a field set in `init()` was still empty. **Check for actual `/photo/…` requests, not just `/photos`, when verifying the screensaver.**
 
 Also not available on Roku OS 15: `roAppManager.UpdateLastKeyPressTime` and `GetScreensaverTimeout` (an app can't hold off the screensaver or read its delay).
 
