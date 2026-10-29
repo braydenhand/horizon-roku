@@ -112,7 +112,7 @@ What Roku's mobile app uses, and it is **not** restricted by Limited mode.
 - Debug console: `telnet <tv> 8085`. **One connection at a time.** Prints, compile errors, and the debugger on a crash.
 - **Image memory is about 100 MB, shared with Roku's own UI, and acts as a cache.** `query-r2d2-bitmaps` lists every texture. Images held by hidden nodes stay loaded. When it's nearly full, developer screenshots come back black (the UI itself keeps working, because unreferenced textures get evicted).
 - Textures larger than the UI resolution log a warning and also broke screenshots, so photos are served at exactly 1920×1080 and enlarged ~3% by the Poster where edges must stay off screen.
-- Screensavers: `screensaver_title=` in the manifest plus `sub RunScreenSaver()` in `main.brs`. Developer apps can be selected under *Settings → Theme → Screensavers*.
+- Screensavers: `screensaver_title=` in the manifest plus `sub RunScreenSaver()` in `main.brs`. A non‑private screensaver from a developer app can be selected under *Settings → Theme → Screensavers*, but it **doesn't run while its own app is open** (see "Debugging the screensaver" below). Horizon's is private (`screensaver_private=1`).
 
 ---
 
@@ -184,7 +184,13 @@ ssh <pi> journalctl -u roku-watcher -f
 - `curl -X POST "http://<tv>:8060/launch/dev?mode=screensaver"` runs `ScreensaverScene` as a normal app, so it can be screenshotted and inspected.
 - With `deploy_pi.py --verbose`, a running screensaver shows up in the Pi's log as `GET /photos?auto=1` plus a `/photo/…` request within a second of starting.
 
-**Open issue (Oct 2026):** once, after about four days of TV uptime, *Settings → Screensavers → Preview* showed solid black (no photo, no clock) while `query-active-app` reported the Horizon screensaver running. Reinstalling the app fixed it, and it didn't reproduce after a heavy launcher session. Next time, check the Pi log for the `/photos` request before reinstalling: no request means the screensaver's code never ran; a request means it ran but drew nothing.
+**Solved (Oct 2026): a black screensaver over Horizon.** Two separate Roku behaviours were involved:
+1. If an app's **non‑private** screensaver kicks in *while that same app is running*, Roku reports it as running (`<screensaver id="dev">`) but never calls `RunScreenSaver`, so the screen is black. From Roku home or *Settings → Preview* it works, which made it look intermittent. Fix: `screensaver_private=1`, which Roku runs properly over the app; the trade‑off is that a private screensaver isn't listed in *Settings → Theme → Screensavers*.
+2. With the private screensaver, the **first** run in a Horizon session worked, but after it was dismissed, **Task nodes inside later runs never executed**: `RunScreenSaver` started and showed its screen, but the photo frame's `FetchTask` never made its request, so it stayed black. Horizon's own Tasks (LaunchTask, All apps) were unaffected. Fix: in screensaver mode, `RunScreenSaver` fetches `/photos` and `/weather` itself with `roUrlTransfer` on its own thread and passes the JSON to `PhotoFrame` (`external` mode: `photoData`, `weatherData`, `needPhotos`). Posters load images without Tasks. Verified over several consecutive cycles.
+
+How this was diagnosed: the screensaver's output doesn't reach the debug console, so a temporary `ping()` in `RunScreenSaver` sent `GET /health?saver=<state>` to the watcher (with `--verbose` on, the Pi logs every request) to trace its lifecycle.
+
+Also not available on Roku OS 15: `roAppManager.UpdateLastKeyPressTime` and `GetScreensaverTimeout` (an app can't hold off the screensaver or read its delay).
 
 **Remote testing etiquette.** `tools/remote.py` presses real buttons on a real TV. If focus isn't where you think it is, **OK launches whatever is focused**, and this happened twice during development. Take a `shot:` and look at it before any OK, and keep sequences short.
 

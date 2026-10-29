@@ -37,7 +37,7 @@ Inspired by [CleanFrame](https://github.com/nthnclrk/CleanFrame), which does the
 - **Day & night wallpapers.** Photos are sorted by brightness. Brighter ones show while the sun is up (using local sunrise and sunset), darker ones at night. Change on every open, every 15 minutes or hourly, or pin a favourite.
 - **HDMI inputs one press away** in a glass pill under the dock. It remembers the last one you used.
 - **Your apps, your order.** Monochrome marks for well‑known services, large type for the rest. Rearrange or remove right on the dock (✱), add from All apps (✱). Saved on the TV.
-- **A screensaver** that shares the same photos and type, available from the launcher or as Roku's own screensaver ("Horizon").
+- **A screensaver** that shares the same photos and type. It starts by itself after your Roku screensaver wait time while Horizon is open, or on demand from the top‑right controls.
 - **Clock & weather** (Open‑Meteo; no API key).
 
 ## How it works
@@ -112,8 +112,6 @@ python tools/add_photos.py ~/Pictures/wallpapers/*.jpg
 python build.py
 ```
 
-**5. Optional:** choose **Horizon** in *Settings → Theme → Screensavers* on the TV.
-
 That's it. Turn the TV off and on, and Horizon should open.
 
 ## Using it
@@ -170,6 +168,7 @@ docs/               DEVELOPMENT.md (architecture, Roku findings, gotchas), image
 - It's a launcher you return to, not a true home‑screen replacement. Roku doesn't allow that, so Roku's home flashes for about a second before Horizon reopens.
 - The watcher relies on Roku's **ECP‑2 WebSocket**, which is undocumented (it's what Roku's mobile app uses). A Roku OS update could change it. Everything else uses public APIs.
 - Sideloaded apps live in developer mode: one at a time, and removed if developer mode is turned off.
+- Horizon's screensaver is *private*: it runs while Horizon is open (where you'll mostly be), but it isn't in Roku's screensaver list, so pick any system screensaver for Roku home and paused apps. Roku runs a non‑private screensaver over its own app as a black screen, so a system‑wide version would need to be a separate app.
 - Built and tested on a single TV model. Other Roku TVs should work, but that hasn't been tested.
 
 ## Credits & licenses

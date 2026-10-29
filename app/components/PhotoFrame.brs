@@ -36,12 +36,29 @@ sub init()
     m.weatherTimer.observeField("fire", "fetchWeather")
     updateClock()
 
+    ' Decide how to get data once fields set in XML or by the creator have
+    ' arrived (an "external" frame is fed by its owner instead of fetching)
+    m.startTimer = m.top.findNode("startTimer")
+    m.startTimer.observeField("fire", "start")
+    m.startTimer.control = "start"
+end sub
+
+sub start()
+    if m.top.external then return  ' wait for photoData / weatherData
     if m.base = "" then
         setPhotos([])
     else
-        fetch("photos", m.base + "/photos?auto=1")
+        requestPhotos()
         fetchWeather()
         m.weatherTimer.control = "start"
+    end if
+end sub
+
+sub requestPhotos()
+    if m.top.external then
+        m.top.needPhotos = true
+    else
+        fetch("photos", m.base + "/photos?auto=1")
     end if
 end sub
 
@@ -59,28 +76,42 @@ end sub
 sub fetchWeather()
     fetch("weather", m.base + "/weather")
     ' If the Pi was unreachable earlier we are stuck on the fallback; try again
-    if m.photos.Count() = 1 and m.photos[0] = m.fallback then fetch("photos", m.base + "/photos?auto=1")
+    if m.photos.Count() = 1 and m.photos[0] = m.fallback then requestPhotos()
 end sub
 
 sub onFetched(event as Object)
     task = event.getRoSGNode()
     result = invalid
     if task.code = 200 then result = ParseJson(task.response)
-    if task.kind = "photos" then
-        urls = []
-        if result <> invalid and result.photos <> invalid then
-            for each path in result.photos
-                urls.Push(m.base + path + "?size=home")
-            end for
-        end if
-        setPhotos(urls)
-    else if task.kind = "weather" then
-        m.weatherText = ""
-        if result <> invalid and result.temp <> invalid then
-            m.weatherText = result.temp.ToStr() + "°  " + result.text
-        end if
-        updateClock()
+    if task.kind = "photos" then handlePhotos(result)
+    if task.kind = "weather" then handleWeather(result)
+end sub
+
+' External mode: the owner passes the raw JSON answers
+sub onPhotoData()
+    handlePhotos(ParseJson(m.top.photoData))
+end sub
+
+sub onWeatherData()
+    handleWeather(ParseJson(m.top.weatherData))
+end sub
+
+sub handlePhotos(result as Dynamic)
+    urls = []
+    if result <> invalid and result.photos <> invalid then
+        for each path in result.photos
+            urls.Push(m.base + path + "?size=home")
+        end for
     end if
+    setPhotos(urls)
+end sub
+
+sub handleWeather(result as Dynamic)
+    m.weatherText = ""
+    if result <> invalid and result.temp <> invalid then
+        m.weatherText = result.temp.ToStr() + "°  " + result.text
+    end if
+    updateClock()
 end sub
 
 sub setPhotos(urls as Object)
@@ -125,7 +156,7 @@ sub nextPhoto()
     if m.photos.Count() = 0 then return
     if m.index + 1 >= m.photos.Count() and m.base <> "" and m.index >= 0 then
         ' End of a cycle: pick up photos added or removed on the Pi
-        fetch("photos", m.base + "/photos?auto=1")
+        requestPhotos()
         return
     end if
     m.index = m.index + 1

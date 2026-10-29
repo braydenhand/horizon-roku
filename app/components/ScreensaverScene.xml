@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- The Roku screensaver (Settings > Theme > Screensavers > Horizon) -->
+<!-- Horizon's screensaver: a private screensaver that Roku runs while Horizon
+     is open. RunScreenSaver (main.brs) fetches the data on its own thread and
+     passes it in: after a screensaver over Horizon is dismissed, Task nodes in
+     the next one never run, so the frame can't fetch for itself here. -->
 <component name="ScreensaverScene" extends="Scene">
+  <interface>
+    <field id="photoData" type="string" alias="frame.photoData" />
+    <field id="weatherData" type="string" alias="frame.weatherData" />
+    <field id="needPhotos" type="bool" alias="frame.needPhotos" />
+  </interface>
   <children>
-    <PhotoFrame id="frame" />
+    <PhotoFrame id="frame" external="true" />
   </children>
 </component>

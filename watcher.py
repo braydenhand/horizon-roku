@@ -209,9 +209,16 @@ class Watcher:
 
     # ---- redirect
 
-    async def open_launcher(self, reason):
-        status = await asyncio.to_thread(ecp_launch, self.tv, LAUNCHER_ID, f"?reason={reason}")
-        log.info("redirect (%s): opened launcher -> %s", reason, status)
+    async def open_launcher(self, reason, attempts=4):
+        """Launch Horizon. Right after waking, the TV can answer 503 for a moment."""
+        for attempt in range(attempts):
+            try:
+                status = await asyncio.to_thread(ecp_launch, self.tv, LAUNCHER_ID, f"?reason={reason}")
+                log.info("redirect (%s): opened launcher -> %s", reason, status)
+                return
+            except OSError as e:  # HTTPError and URLError are OSErrors
+                log.info("redirect (%s): launch failed (%s), attempt %d", reason, e, attempt + 1)
+                await asyncio.sleep(1.0)
 
     async def check_and_redirect(self, reason, delay, checks=8, interval=0.35):
         """Open the launcher once the TV settles on Roku's home screen. The exiting
